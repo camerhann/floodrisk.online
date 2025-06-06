@@ -6,6 +6,11 @@ import { prisma } from '@/lib/prisma'; // Import the singleton instance
 
 // const prisma = new PrismaClient(); // No longer creating a new instance here
 
+// Ensure NEXTAUTH_SECRET is set in production
+if (!process.env.NEXTAUTH_SECRET && process.env.NODE_ENV === 'production') {
+  throw new Error('NEXTAUTH_SECRET must be set in production');
+}
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma), // Use the imported singleton prisma instance
   providers: [
@@ -21,21 +26,17 @@ export const authOptions: NextAuthOptions = {
       // from: process.env.EMAIL_FROM, // Commented out for console logging
       // maxAge: 24 * 60 * 60, // Optional: Time to live for the token, in seconds
       async sendVerificationRequest({ identifier: email, url, provider }) {
-        // Log the verification URL to the console instead of sending an email
-        console.log(`\n\n--- DEVELOPMENT EMAIL ---`);
-        console.log(`Sign in as ${email}`);
-        console.log(`Verification URL: ${url}`);
-        console.log(`-----------------------\n\n`);
-        // Note: In a real app, you would use an email sending service here
-        // For example, with Nodemailer:
-        // const { host } = new URL(url);
-        // await transport.sendMail({
-        //   to: email,
-        //   from: provider.from,
-        //   subject: `Sign in to ${host}`,
-        //   text: text({ url, host }),
-        //   html: html({ url, host, theme }),
-        // });
+        // Development console logging
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`\n\n--- DEVELOPMENT EMAIL ---`);
+          console.log(`Sign in as ${email}`);
+          console.log(`Verification URL: ${url}`);
+          console.log(`-----------------------\n\n`);
+          return;
+        }
+        
+        // Production email sending would go here
+        // throw new Error('Email sending not configured for production');
       }
     }),
     // Add other providers like Google, GitHub, etc., here
@@ -48,25 +49,54 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
-        session.user.role = token.role as string; // Assuming role is stored in the token
+        session.user.role = token.role as string;
       }
       return session;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
-        // @ts-expect-error User type from NextAuth might not directly have role without adapter specific extension
-        token.role = user.role; // Persist role to the JWT
+        // @ts-expect-error User type from NextAuth might not directly have role
+        token.role = user.role || 'CLIENT';
       }
       return token;
     },
+    async signIn({ user, account, profile, email, credentials }) {
+      // Add custom sign-in logic here if needed
+      // For example, check if user is allowed to sign in
+      return true;
+    },
+    async redirect({ url, baseUrl }) {
+      // Allows relative callback URLs
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      // Allows callback URLs on the same origin
+      else if (new URL(url).origin === baseUrl) return url;
+      return baseUrl;
+    }
   },
   pages: {
-    // signIn: '/auth/signin', // If you want a custom sign-in page
-    // verifyRequest: '/auth/verify-request', // Used for Email provider's "check your email" page
+    signIn: '/auth/signin',
+    verifyRequest: '/auth/verify-request',
+    error: '/auth/error',
   },
-  // Enable debug messages in the console if you are having problems
-  // debug: process.env.NODE_ENV === 'development',
+  events: {
+    async signIn({ user, account, profile, isNewUser }) {
+      console.log(`User ${user.email} signed in. New user: ${isNewUser}`);
+    },
+    async signOut({ session, token }) {
+      console.log(`User signed out`);
+    },
+    async createUser({ user }) {
+      console.log(`New user created: ${user.email}`);
+    },
+    async linkAccount({ user, account, profile }) {
+      console.log(`Account linked for user: ${user.email}`);
+    },
+    async session({ session, token }) {
+      // Called whenever a session is checked
+    }
+  },
+  debug: process.env.NODE_ENV === 'development',
 };
 
 export default NextAuth(authOptions); 

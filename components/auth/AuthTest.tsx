@@ -4,20 +4,24 @@ export default function AuthTest() {
   const { data: session, status } = useSession();
 
   if (status === 'loading') {
-    return <p>Loading session...</p>;
+    return <p className="text-gray-600">Loading session...</p>;
   }
 
   if (session && session.user) {
     return (
-      <div style={{ border: '1px solid #ccc', padding: '20px', margin: '20px' }}>
-        <h4>Authentication Status</h4>
-        <p>Signed in as: <strong>{session.user.email}</strong></p>
-        <p>Name: {session.user.name || 'N/A'}</p>
-        <p>Role: <strong>{session.user.role || 'N/A'}</strong></p> {/* Assuming role is in session.user */}
-        <p>User ID: {session.user.id || 'N/A'}</p> {/* Assuming id is in session.user */}
+      <div className="border border-gray-300 p-5 m-5 rounded-lg shadow-sm">
+        <h4 className="text-lg font-semibold mb-3">Authentication Status</h4>
+        <p className="mb-2">
+          Signed in as: <strong className="font-bold">{session.user.email}</strong>
+        </p>
+        <p className="mb-2">Name: {session.user.name || 'N/A'}</p>
+        <p className="mb-2">
+          Role: <strong className="font-bold">{session.user.role || 'N/A'}</strong>
+        </p>
+        <p className="mb-2">User ID: {session.user.id || 'N/A'}</p>
         <button 
           onClick={() => signOut()} 
-          style={{ marginTop: '10px', padding: '8px 12px', backgroundColor: '#f00', color: 'white', border: 'none', cursor: 'pointer' }}
+          className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors cursor-pointer"
         >
           Sign out
         </button>
@@ -26,10 +30,10 @@ export default function AuthTest() {
   }
 
   return (
-    <div style={{ border: '1px solid #ccc', padding: '20px', margin: '20px' }}>
-      <h4>Authentication Status</h4>
-      <p>Not signed in</p>
-      <p>Enter your email to sign in with a magic link:</p>
+    <div className="border border-gray-300 p-5 m-5 rounded-lg shadow-sm">
+      <h4 className="text-lg font-semibold mb-3">Authentication Status</h4>
+      <p className="mb-2 text-gray-600">Not signed in</p>
+      <p className="mb-4">Enter your email to sign in with a magic link:</p>
       <form onSubmit={(e) => {
         e.preventDefault();
         const email = (e.target as HTMLFormElement).email.value;
@@ -37,10 +41,16 @@ export default function AuthTest() {
           signIn('email', { email });
         }
       }}>
-        <input type="email" name="email" placeholder="your@email.com" required style={{ padding: '8px', marginRight: '10px' }} />
+        <input 
+          type="email" 
+          name="email" 
+          placeholder="your@email.com" 
+          required 
+          className="px-3 py-2 border border-gray-300 rounded mr-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
         <button 
           type="submit" 
-          style={{ padding: '8px 12px', backgroundColor: '#0070f3', color: 'white', border: 'none', cursor: 'pointer' }}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors cursor-pointer"
         >
           Sign in with Email
         </button>
